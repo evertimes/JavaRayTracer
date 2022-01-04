@@ -3,6 +3,7 @@ package com.evertimes;
 import com.evertimes.datatype.DoublePair;
 import com.evertimes.datatype.DoubleSpherePair;
 import com.evertimes.datatype.Light;
+import com.evertimes.datatype.Matrix;
 import com.evertimes.datatype.Sphere;
 import com.evertimes.datatype.Vector;
 import org.jetbrains.skija.Color;
@@ -22,7 +23,9 @@ public class RayTracer {
     }
 
     static final int BACKGROUND_COLOR = Color.makeRGB(0, 0, 0);
-    private static final Double step = 0.5;
+    private static final double step = 0.5;
+    private static final double rotationStepRadians = 0.0872665;
+    private double currentRotationRadians = 0.0;
     int Vh = 1; //Height of view window
     int Vw = 1; //Width of view window
     double dist = 1.0;
@@ -36,6 +39,7 @@ public class RayTracer {
             new Light(1, 0.6, new Vector(2.0, 1.0, 0.0)),
             new Light(2, 0.2, new Vector(1.0, 4.0, 4.0)));
     Vector pointOfView = new Vector(0.0, 0.0, -2.0);
+    double[][] cameraRotation = {{0.7071, 0, -0.7071}, {0, 1, 0}, {0.7071, 0, 0.7071}};
     double EPSILON = 0.001;
     int recursionDepth = 2;
 
@@ -63,12 +67,22 @@ public class RayTracer {
         pointOfView.y += step;
     }
 
+    public void rotateRight() {
+        currentRotationRadians += rotationStepRadians;
+    }
+
+    public void rotateLeft() {
+        currentRotationRadians -= rotationStepRadians;
+    }
+
     Vector canvasToViewPort(int x, int y) {
         return new Vector(((double) x) / sizeX, ((double) y) / sizeY, dist);
     }
-    Vector reflectRay(Vector v1, Vector v2){
-        return vctrSubs(vctrScale(v2,2*vctrDot(v1,v2)),v1);
+
+    Vector reflectRay(Vector v1, Vector v2) {
+        return vctrSubs(vctrScale(v2, 2 * vctrDot(v1, v2)), v1);
     }
+
     DoubleSpherePair closestIntersection(Vector O, Vector D, double t_min, double t_max) {
         var closest_T = Double.POSITIVE_INFINITY;
         Sphere closest_sphere = null;
@@ -90,7 +104,7 @@ public class RayTracer {
         }
     }
 
-    int traceRay(Vector O, Vector D, double t_min, double t_max,int depth) {
+    int traceRay(Vector O, Vector D, double t_min, double t_max, int depth) {
         Vector view = vctrScale(D, -1);
         DoubleSpherePair intersection = closestIntersection(O, D, t_min, t_max);
         if (intersection == null) {
@@ -111,14 +125,15 @@ public class RayTracer {
         var blue = (Color.getB(closest_sphere.color) * colorFactor);
         if (blue > 255)
             blue = 255;
-        if(closest_sphere.reflective<= 0 || depth<=0) {
+        if (closest_sphere.reflective <= 0 || depth <= 0) {
             return Color.makeRGB((int) red, (int) green, (int) blue);
         }
-        Vector reflectedRay = reflectRay(view,N);
-        int reflectedColor = traceRay(P,reflectedRay,EPSILON,Double.POSITIVE_INFINITY,depth-1);
-        red = red*(1-closest_sphere.reflective)+closest_sphere.reflective*Color.getR(reflectedColor);
-        green = green*(1-closest_sphere.reflective)+closest_sphere.reflective*Color.getG(reflectedColor);;
-        blue = blue*(1-closest_sphere.reflective)+closest_sphere.reflective*Color.getB(reflectedColor);
+        Vector reflectedRay = reflectRay(view, N);
+        int reflectedColor = traceRay(P, reflectedRay, EPSILON, Double.POSITIVE_INFINITY, depth - 1);
+        red = red * (1 - closest_sphere.reflective) + closest_sphere.reflective * Color.getR(reflectedColor);
+        green = green * (1 - closest_sphere.reflective) + closest_sphere.reflective * Color.getG(reflectedColor);
+        ;
+        blue = blue * (1 - closest_sphere.reflective) + closest_sphere.reflective * Color.getB(reflectedColor);
         if (red > 255)
             red = 255;
         if (green > 255)
@@ -167,7 +182,7 @@ public class RayTracer {
                 }
                 //Specular Reflection
                 if (specular != -1) {
-                    Vector r = reflectRay(L,N);
+                    Vector r = reflectRay(L, N);
                     double rv = vctrDot(r, view);
                     if (rv > 0) {
                         initialIntensity += light.intensity * Math.pow(rv / (vctrLen(r) * vctrLen(view)), specular);
@@ -182,8 +197,8 @@ public class RayTracer {
         int[][] array = new int[sizeX][sizeY];
         for (int i = -sizeY / 2; i < sizeY / 2; i++) {
             for (int j = -sizeX / 2; j < sizeX / 2; j++) {
-                var D = canvasToViewPort(j, i);
-                var color = traceRay(pointOfView, D, 1, Integer.MAX_VALUE,recursionDepth);
+                var D = Matrix.multiplyMatrixByVector(Matrix.constructRotationYMatrix(currentRotationRadians), canvasToViewPort(j, i));
+                var color = traceRay(pointOfView, D, 1, Integer.MAX_VALUE, recursionDepth);
                 array[sizeX / 2 + j][sizeY / 2 - i - 1] = color;
             }
         }

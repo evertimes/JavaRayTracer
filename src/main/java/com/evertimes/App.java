@@ -45,6 +45,10 @@ public class App {
                 tracer.incYView();
             } else if (key == GLFW_KEY_LEFT_CONTROL && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
                 tracer.decYView();
+            } else if (key == GLFW_KEY_RIGHT && (action == GLFW_REPEAT || action == GLFW_PRESS)){
+                tracer.rotateRight();
+            } else if (key == GLFW_KEY_LEFT && (action == GLFW_REPEAT || action == GLFW_PRESS)){
+                tracer.rotateLeft();
             }
         });
         // Initialize OpenGL
