@@ -6,8 +6,6 @@ import org.jetbrains.skija.Paint;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
